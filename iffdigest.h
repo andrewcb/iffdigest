@@ -1,0 +1,115 @@
+//  iffdigest.h  C++ classes for a simple (in-memory) IFF/RIFF file parser.
+
+#ifndef __IFFPARSER_H
+#define __IFFPARSER_H
+
+#include <list>
+
+typedef unsigned int iff_ckid_t;
+
+//  utility functions 
+
+// cast (the first 4 chars of) a string to a 32-bit int chunk ID
+static inline iff_ckid_t iff_ckid(const char* id) { return *((const int*)id); }
+
+enum IFFFormat { IFF_FMT_IFF85, IFF_FMT_RIFF, IFF_FMT_ERROR };
+
+class IFFChunk;
+typedef list<IFFChunk>::iterator IFFChunkIterator;
+
+class IFFChunkList: public list<IFFChunk> {
+public:
+  IFFChunkIterator findNextChunk(IFFChunkIterator from, iff_ckid_t ckid);
+  IFFChunkIterator findChunk(iff_ckid_t ckid);
+};
+
+class IFFChunk {
+protected:
+  iff_ckid_t ckid;
+  char tnull; 		// terminating null for id
+  enum { IFF_CHUNK_DATA, IFF_CHUNK_LIST } ctype;
+  const char* data;
+  unsigned int length;
+  IFFChunkList subchunks;
+  
+public:
+  IFFChunk(unsigned int id, const char* d, unsigned int l) 
+    : ckid(id), tnull('\0'), ctype(IFF_CHUNK_DATA), data(d), length(l) {}
+  IFFChunk(unsigned int id, IFFChunkList sc) 
+    : ckid(id), tnull('\0'), ctype(IFF_CHUNK_LIST), subchunks(sc), data(0), length(0) {}
+  IFFChunk(const IFFChunk& ck);
+  void operator=(const IFFChunk& ck);
+  const char* id_str() const { return (const char*)(&ckid); }
+  iff_ckid_t id() const { return ckid; }
+  inline bool operator==(const char* id) const { return ckid==iff_ckid(id); }
+  inline bool operator!=(const char* id) const { return ckid!=iff_ckid(id); }
+  inline bool operator==(iff_ckid_t id) const { return ckid==id; }
+  inline bool operator!=(iff_ckid_t id) const { return ckid!=id; }
+  const char* dataPtr() const { return data; }
+  unsigned int len() const { return length; }
+  inline IFFChunkIterator ck_begin() { return subchunks.begin(); }
+  inline IFFChunkIterator ck_end() { return subchunks.end(); }
+  inline IFFChunkIterator ck_find(iff_ckid_t id) { return subchunks.findChunk(id); }
+  inline IFFChunkIterator ck_findNext(IFFChunkIterator i, iff_ckid_t id) { return subchunks.findNextChunk(i, id); }
+};
+
+class IFFDigest {
+protected:
+  enum IFFFormat ftype;
+  iff_ckid_t fid;
+  char tnull;
+  IFFChunkList chunks;
+  const char* contents;
+
+public:
+  IFFDigest(const char* data, unsigned int dlen);
+
+  inline enum IFFFormat iffvariant() const { return ftype; }
+  inline bool valid() const { return ftype != IFF_FMT_ERROR; }
+  inline iff_ckid_t id() const { return fid; }
+  inline const char* id_str() const { return (const char*)(&fid); }
+
+  inline IFFChunkIterator ck_begin() { return chunks.begin(); }
+  inline IFFChunkIterator ck_end() { return chunks.end(); }
+  inline IFFChunkIterator ck_find(iff_ckid_t id) { return chunks.findChunk(id); }
+  inline IFFChunkIterator ck_findNext(IFFChunkIterator i, iff_ckid_t id) { return chunks.findNextChunk(i, id); }
+};
+
+// functions for decoding byte-order-specific ints
+static inline unsigned short iff_u16_le(const char* ptr) 
+  { return ((const unsigned char*)ptr)[0]|(((const unsigned char*)ptr)[1]<<8);}
+static inline unsigned short iff_u16_be(const char* ptr) 
+  { return ((const unsigned char*)ptr)[1]|(((const unsigned char*)ptr)[0]<<8);}
+static inline signed short iff_s16_le(const char* ptr) 
+  { return (signed short)iff_u16_le(ptr); }
+static inline signed short iff_s16_be(const char* ptr) 
+  { return (signed short)iff_u16_be(ptr); }
+static inline unsigned int iff_u32_le(const char* ptr) 
+  { return ((const unsigned char*)ptr)[0] |(((const unsigned char*)ptr)[1]<<8)
+    |(((const unsigned char*)ptr)[2]<<16) |(((const unsigned char*)ptr)[3]<<24);}
+static inline unsigned int iff_u32_be(const char* ptr) 
+  { return ((const unsigned char*)ptr)[3] |(((const unsigned char*)ptr)[2]<<8)
+    |(((const unsigned char*)ptr)[1]<<16) |(((const unsigned char*)ptr)[0]<<24);}
+static inline signed int iff_s32_le(const char* ptr) 
+  { return (signed int)iff_u32_le(ptr); }
+static inline signed int iff_s32_be(const char* ptr) 
+  { return (signed int)iff_u32_be(ptr); }
+
+static inline unsigned short 
+iff_u16_le(const unsigned short& s) { return iff_u16_le((const char*)&s); }
+static inline unsigned short 
+iff_u16_be(const unsigned short& s) { return iff_u16_be((const char*)&s); }
+static inline signed short 
+iff_s16_le(const signed short& s) { return iff_s16_le((const char*)&s); }
+static inline signed short 
+iff_s16_be(const signed short& s) { return iff_s16_be((const char*)&s); }
+static inline unsigned int 
+iff_u32_le(const unsigned int& s) { return iff_u32_le((const char*)&s); }
+static inline unsigned int 
+iff_u32_be(const unsigned int& s) { return iff_u32_be((const char*)&s); }
+static inline signed int 
+iff_s32_le(const signed int& s) { return iff_s32_le((const char*)&s); }
+static inline signed int 
+iff_s32_be(const signed int& s) { return iff_s32_be((const char*)&s); }
+
+#endif

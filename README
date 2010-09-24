@@ -1,0 +1,121 @@
+iffdigest v0.3  A lightweight parser for in-memory EA-IFF-85/RIFF structures
+
+Andrew C. Bulhak  13/2/2002
+
+
+What is it?
+-----------
+
+iffdigest is a minimal, lightweight library for parsing the structure of a
+file in the EA-IFF-85 file format (such as an AIFF file or various legacy 
+Amiga file formats) or the related Microsoft RIFF format (such as WAV files,
+AVI files and SoundFonts, among others).
+
+ - iffdigest does not read files, but works on an in-memory image of the 
+   file contents.  For small files, loading the entire file into memory will
+   work.  Larger files may be accessed efficiently by using memory-mapped I/O
+   (i.e., with the mmap() system call under all modern UNIX systems). The
+   example program uses this method.
+
+ - iffdigest is very lightweight; the source is contained in two files
+   (the source file and a header file) which can be easily incorporated into
+   larger projects which happen to need IFF/RIFF parsing.
+
+ - The data structures created by iffdigest are also lightweight; they do not
+   contain copies of the IFF file's data, but only pointers into the memory
+   image of the file.  This saves on copying, and makes the format ideal for
+   transitory, short-term data structures for use in constructing a 
+   more specialised higher-level representation.
+
+ - iffdigest is written in C++, and uses the Standard Template Library (STL) 
+   for its internal data structures (as it's pretty much universally available,
+   an uncommonly civilised way of doing things for C/C++).  Modern compilers
+   (including GNU C++) should have no problems; though if you don't have 
+   templates, I'm afraid there's not much that can be done.
+
+ - iffdigest was developed on MacOS X (Darwin), but should compile on Linux 
+   and other modern unices.   Byte-order handling should be determined at
+   compile-time.  If it doesn't work, and you're on a big-endian system,
+   define the C preprocessor symbol __BIG_ENDIAN__.
+
+Using iffdigest
+
+Look at ifflist.c and wavtest.c for an example.   The general procedure is:
+
+ - Get your data somewhere where you can get a const char * to it (see the 
+   note above about mmap())
+
+ - Create an IFFDigest() object, initialised with a pointer to the data and
+   the length of the buffer to look at (for checking).  This step will analyse
+   the buffer and create a data structure, mapping out its chunks.
+
+ - To determine whether the data parsed correctly, check the result of the 
+   object's valid() method.  If it returns true, you're good to go.
+
+ - The IFFDigest object contains a list of IFFChunk objects; each one of which
+   contains a (possibly empty) list of sub-chunks and (if applicable) a 
+   pointer and size to the chunk's data.  (Note that this points into the 
+   buffer you fed into IFFDigest(), and is not copied; the structure is 
+   very lightweight, and only points to the data in the buffer analysed.  
+   Needless to say, do not delete or free this buffer until you're finished 
+   with your IFFDigest.)
+
+   - Each chunk has an ID field (returned by id() or id_str()). 
+     For efficiency, IDs are stored in 32-bit integers, of type iff_ckid_t.
+     The utility function iff_ckid() converts a string into an integer ID, and
+     may be used for specifying chunk IDs as strings.
+
+   - in the case of LIST chunks, the chunk's ID is not 'LIST', but the 
+     list subtype.  (The reasoning being that adding an extra field would be 
+     redundant, as the fact that the chunk has subchunks indicates that it is 
+     a LIST.)
+
+   - You can obtain STL iterators to an IFFDigest or IFFChunk's subchunk list
+     with the ck_begin() and ck_end() methods.  See the STL documentation for
+     more information on iterators.
+
+   - To find the first chunk in IFDigest or IFChunk's subchunk list matching
+     a chunk ID, use the ck_find() method; i.e., 
+
+       IFFChunkIterator i_comt = digest.findChunk(iff_ckid("COMT"));
+       if(i_comt != digest.ck_end()) {
+         // here *i_comt is the IFFChunk pointing to the first COMT chunk
+       }
+
+       the findNextChunk(iter, id) method returns an iterator pointing to the 
+       next chunk matching id after iter, or ck_end() if none.
+
+   - IFFDigest and IFFChunk also have methods for returning various other 
+     information.  See iffdigest.h for details.
+
+Sample programs
+
+iffdigest comes with two trivial sample programs to demonstrate usage:
+
+  - ifflist lists the structure of an IFF or RIFF file, including 
+    nested chunks in RIFF LIST structures, and shows the first 12 bytes
+    of each chunk.
+
+  - wavtest demonstrates how to use iffdigest to look for and read the
+    contents of a specific chunk; given the name of a WAV file on the 
+    command line, it uses the ck_find method to find the "fmt " chunk,
+    and then extracts and prints information about the WAV file from 
+    this chunk.  An error message is printed if the file does not have a
+    "fmt " chunk.
+
+Bugs
+
+  - iffdigest's EA-IFF-85 support is rudimentary; no chunk-specific handling
+    has been implemented for special chunk types.  However, it seems to work 
+    acceptably on AIFF files.
+
+History
+  v0.1 - initial release; basic IFF parsing in place.
+  v0.2 - ck_find()/ck_findNext() methods added; 
+         wavtest example added 
+  v0.3 - added the iff_[us]xx_[bl]e() utility functions for reading 
+         integer values in a specific byte order.
+
+Licence
+
+iffdigest is distributed under the GNU General Public Licence.
