@@ -1,5 +1,5 @@
 #include "iffdigest.h"
-#include <algo.h>
+#include <algorithm>
 
 static IFFChunkList
 parseChunks(const char* mem, enum IFFFormat fmt, unsigned int len);
