@@ -1,6 +1,11 @@
 #include "iffdigest.h"
 #include <algorithm>
 
+// gcc auto endian
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define __BIG_ENDIAN__
+#endif
+
 static IFFChunkList
 parseChunks(const char* mem, enum IFFFormat fmt, unsigned int len);
 
