@@ -15,9 +15,9 @@ static inline iff_ckid_t iff_ckid(const char* id) { return *((const int*)id); }
 enum IFFFormat { IFF_FMT_IFF85, IFF_FMT_RIFF, IFF_FMT_ERROR };
 
 class IFFChunk;
-typedef list<IFFChunk>::iterator IFFChunkIterator;
+typedef std::list<IFFChunk>::iterator IFFChunkIterator;
 
-class IFFChunkList: public list<IFFChunk> {
+class IFFChunkList: public std::list<IFFChunk> {
 public:
   IFFChunkIterator findNextChunk(IFFChunkIterator from, iff_ckid_t ckid);
   IFFChunkIterator findChunk(iff_ckid_t ckid);
