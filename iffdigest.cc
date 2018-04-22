@@ -1,48 +1,8 @@
 #include "iffdigest.h"
 #include <algorithm>
 
-// gcc auto endian
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-#define __BIG_ENDIAN__
-#endif
-
 static IFFChunkList
 parseChunks(const char* mem, enum IFFFormat fmt, unsigned int len);
-
-static inline unsigned int
-swap_u32(unsigned int i)
-{
-  return ((i&0xff)<<24) | ((i&0xff00) <<8) | ((i&0xff0000)>>8) | (i>>24);
-}
-
-static inline unsigned int
-u32_be(unsigned int i)
-{
-#ifdef __BIG_ENDIAN__
-  return i;
-#else
-  return swap_u32(i);
-#endif
-}
-
-static inline unsigned int
-u32_le(unsigned int i)
-{
-#ifdef __BIG_ENDIAN__
-  return swap_u32(i);
-#else
-  return i;
-#endif
-}
-
-static inline unsigned int
-u32(unsigned int i, enum IFFFormat fmt)
-{
-  if(fmt==IFF_FMT_RIFF)  return u32_le(i);
-  else return u32_be(i);
-}
-
-// utility function for casting the first 4 chars of a string to an unsigned int
 
 // compare a chunk ID (unsigned int) to a (4-letter) string.
 
