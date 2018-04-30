@@ -1,5 +1,7 @@
 #include "iffdigest.h"
 #include <algorithm>
+#include <string.h>
+#include <iostream>
 
 static IFFChunkList
 parseChunks(const char* mem, enum IFFFormat fmt, unsigned int len);
@@ -51,6 +53,97 @@ IFFChunk::operator=(const IFFChunk& ck)
   case IFF_CHUNK_LIST:
     subchunks = ck.subchunks;  data = 0; length = 0;
   }
+}
+
+bool
+IFFChunk::writeData(size_t &len, char* outData,
+  const enum IFFFormat iffFormat, const size_t maxLen)
+{
+  bool bOk = true;
+  size_t listLenStart = len;
+  size_t lenAdd;
+  if(ctype == IFF_CHUNK_LIST) {
+    // 'LIST'
+    lenAdd = 4;
+    if(outData) {
+      if(maxLen >= len+lenAdd) {
+        memcpy(outData+len, "LIST", lenAdd);
+      }
+      else {
+        std::cerr<<"Cannot write LIST - max data length exceeded!\n";
+        bOk = false;
+      }
+    }
+    len += lenAdd;
+    listLenStart = len;
+    // LISTlength unknown here -> set below
+    len += lenAdd;
+  }
+
+  // chunk ID
+  lenAdd = sizeof(iff_ckid_t);
+  if(outData) {
+    if(maxLen >= len+lenAdd) {
+      memcpy(outData+len, &ckid, lenAdd);
+    }
+    else {
+      std::cerr<<"Cannot write chunk ID - max data length exceeded!\n";
+      bOk = false;
+    }
+  }
+  len+=lenAdd;
+
+  if(ctype == IFF_CHUNK_DATA) {
+    // chunk len
+    unsigned int chunkLen;
+    lenAdd = sizeof(chunkLen);
+    if(outData) {
+      if(maxLen >= len+lenAdd) {
+        chunkLen = u32(length, iffFormat);
+        memcpy(outData+len, &chunkLen, lenAdd);
+      }
+      else {
+        std::cerr<<"Cannot write chunk length - max data length exceeded!\n";
+        bOk = false;
+      }
+    }
+    len+=lenAdd;
+
+    // chunk data
+    if(outData) {
+      if(maxLen >= len+length) {
+        memcpy(outData+len, data, length);
+      }
+      else {
+        std::cerr<<"Cannot write chunk data - max data length exceeded!\n";
+        bOk = false;
+      }
+    }
+    len += length;
+  }
+
+  // Write all sub chunks recursively
+  IFFChunkIterator subChunkIterator;
+  for(subChunkIterator = ck_begin();
+      subChunkIterator != ck_end(); subChunkIterator++) {
+    (*subChunkIterator).writeData(len, outData, iffFormat, maxLen);
+  }
+
+  // ListLen
+  unsigned int listLen;
+  lenAdd = sizeof(listLen);
+  if(ctype == IFF_CHUNK_LIST && outData) {
+    if(maxLen >= listLenStart+lenAdd) {
+      // length itself is not part of length -> '- sizeof(unsigned int)'
+      listLen = u32(len - listLenStart - lenAdd, iffFormat);
+      memcpy(outData+listLenStart, &listLen, lenAdd);
+    }
+    else {
+      std::cerr<<"Cannot write list length - max data length exceeded!\n";
+      bOk = false;
+    }
+  }
+  return bOk;
 }
 
 static IFFChunk
