@@ -1,5 +1,6 @@
 #include "iffdigest.h"
 #include <algorithm>
+#include <string.h>
 
 static IFFChunkList
 parseChunks(const char* mem, enum IFFFormat fmt, unsigned int len);
@@ -50,6 +51,56 @@ IFFChunk::operator=(const IFFChunk& ck)
     data = ck.data; length = ck.length; break;
   case IFF_CHUNK_LIST:
     subchunks = ck.subchunks;  data = 0; length = 0;
+  }
+}
+
+void
+IFFChunk::writeData(unsigned int &len, char* outData, const enum IFFFormat iffFormat)
+{
+  unsigned int listLenStart = len;
+  if(ctype == IFF_CHUNK_LIST) {
+    // 'LIST'
+    if(outData) {
+      memcpy(outData+len, "LIST", 4);
+    }
+    len += 4;
+    listLenStart = len;
+    // LISTlength unknown here -> set below
+    len += 4;
+  }
+
+  // chunk ID
+  if(outData) {
+    memcpy(outData+len, &ckid, sizeof(iff_ckid_t));
+  }
+  len+=sizeof(iff_ckid_t);
+
+  if(ctype == IFF_CHUNK_DATA) {
+    // chunk len
+    if(outData) {
+      unsigned int chunkLen = u32(length, iffFormat);
+      memcpy(outData+len, &chunkLen, sizeof(chunkLen));
+    }
+    len+=4;
+
+    // chunk data
+    if(outData) {
+      memcpy(outData+len, data, length);
+    }
+    len += length;
+  }
+
+  // Write all sub chunks recursively
+  IFFChunkIterator subChunkIterator;
+  for(subChunkIterator = ck_begin();
+      subChunkIterator != ck_end(); subChunkIterator++) {
+    (*subChunkIterator).writeData(len, outData, iffFormat);
+  }
+  // ListLen
+  if(ctype == IFF_CHUNK_LIST && outData) {
+    // length itself is not part of length -> '- sizeof(unsigned int)'
+    unsigned int listLen = u32(len - listLenStart - sizeof(unsigned int), iffFormat);
+    memcpy(outData+listLenStart, &listLen, sizeof(listLen));
   }
 }
 

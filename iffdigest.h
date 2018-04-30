@@ -90,6 +90,7 @@ public:
   inline IFFChunkIterator ck_end() { return subchunks.end(); }
   inline IFFChunkIterator ck_find(iff_ckid_t id) { return subchunks.findChunk(id); }
   inline IFFChunkIterator ck_findNext(IFFChunkIterator i, iff_ckid_t id) { return subchunks.findNextChunk(i, id); }
+  void writeData(unsigned int &len, char* outData, const enum IFFFormat iffFormat); // outData=0: calc length only
 };
 
 class IFFDigest {
