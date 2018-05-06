@@ -38,10 +38,10 @@ sf2-split.o: sf2-split.cc iffdigest.h sf2.h
 
 
 sf2-split: sf2.o sf2filesplitter.o sf2-split.o iffdigest.o
-	$(CXX) -o sf2-split sf2.o sf2filesplitter.o sf2-split.o iffdigest.o
+	$(CXX) $(LDFLAGS) -o sf2-split sf2.o sf2filesplitter.o sf2-split.o iffdigest.o
 
 sf2-test: sf2.o sf2-test.o iffdigest.o
-	$(CXX) -o sf2-test sf2.o sf2-test.o iffdigest.o
+	$(CXX) $(LDFLAGS) -o sf2-test sf2.o sf2-test.o iffdigest.o
 
 
 clean:
