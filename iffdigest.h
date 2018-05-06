@@ -75,7 +75,7 @@ public:
   IFFChunk(unsigned int id, const char* d, unsigned int l) 
     : ckid(id), tnull('\0'), ctype(IFF_CHUNK_DATA), data(d), length(l) {}
   IFFChunk(unsigned int id, IFFChunkList sc) 
-    : ckid(id), tnull('\0'), ctype(IFF_CHUNK_LIST), subchunks(sc), data(0), length(0) {}
+    : ckid(id), tnull('\0'), ctype(IFF_CHUNK_LIST), data(0), length(0), subchunks(sc) {}
   IFFChunk(const IFFChunk& ck);
   void operator=(const IFFChunk& ck);
   const char* id_str() const { return (const char*)(&ckid); }
