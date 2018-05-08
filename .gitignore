@@ -1,2 +1,4 @@
 *.o
 wavtest
+sf2-split
+sf2-test

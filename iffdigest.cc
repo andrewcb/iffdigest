@@ -1,43 +1,9 @@
 #include "iffdigest.h"
 #include <algorithm>
+#include <string.h>
 
 static IFFChunkList
 parseChunks(const char* mem, enum IFFFormat fmt, unsigned int len);
-
-static inline unsigned int
-swap_u32(unsigned int i)
-{
-  return ((i&0xff)<<24) | ((i&0xff00) <<8) | ((i&0xff0000)>>8) | (i>>24);
-}
-
-static inline unsigned int
-u32_be(unsigned int i)
-{
-#ifdef __BIG_ENDIAN__
-  return i;
-#else
-  return swap_u32(i);
-#endif
-}
-
-static inline unsigned int
-u32_le(unsigned int i)
-{
-#ifdef __BIG_ENDIAN__
-  return swap_u32(i);
-#else
-  return i;
-#endif
-}
-
-static inline unsigned int
-u32(unsigned int i, enum IFFFormat fmt)
-{
-  if(fmt==IFF_FMT_RIFF)  return u32_le(i);
-  else return u32_be(i);
-}
-
-// utility function for casting the first 4 chars of a string to an unsigned int
 
 // compare a chunk ID (unsigned int) to a (4-letter) string.
 
@@ -85,6 +51,56 @@ IFFChunk::operator=(const IFFChunk& ck)
     data = ck.data; length = ck.length; break;
   case IFF_CHUNK_LIST:
     subchunks = ck.subchunks;  data = 0; length = 0;
+  }
+}
+
+void
+IFFChunk::writeData(unsigned int &len, char* outData, const enum IFFFormat iffFormat)
+{
+  unsigned int listLenStart = len;
+  if(ctype == IFF_CHUNK_LIST) {
+    // 'LIST'
+    if(outData) {
+      memcpy(outData+len, "LIST", 4);
+    }
+    len += 4;
+    listLenStart = len;
+    // LISTlength unknown here -> set below
+    len += 4;
+  }
+
+  // chunk ID
+  if(outData) {
+    memcpy(outData+len, &ckid, sizeof(iff_ckid_t));
+  }
+  len+=sizeof(iff_ckid_t);
+
+  if(ctype == IFF_CHUNK_DATA) {
+    // chunk len
+    if(outData) {
+      unsigned int chunkLen = u32(length, iffFormat);
+      memcpy(outData+len, &chunkLen, sizeof(chunkLen));
+    }
+    len+=4;
+
+    // chunk data
+    if(outData) {
+      memcpy(outData+len, data, length);
+    }
+    len += length;
+  }
+
+  // Write all sub chunks recursively
+  IFFChunkIterator subChunkIterator;
+  for(subChunkIterator = ck_begin();
+      subChunkIterator != ck_end(); subChunkIterator++) {
+    (*subChunkIterator).writeData(len, outData, iffFormat);
+  }
+  // ListLen
+  if(ctype == IFF_CHUNK_LIST && outData) {
+    // length itself is not part of length -> '- sizeof(unsigned int)'
+    unsigned int listLen = u32(len - listLenStart - sizeof(unsigned int), iffFormat);
+    memcpy(outData+listLenStart, &listLen, sizeof(listLen));
   }
 }
 
