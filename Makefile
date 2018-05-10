@@ -1,7 +1,9 @@
 # uncomment the one that's your C++ compiler
-CXX	= c++
+#CXX	= c++
 #CXX	= g++
-CXXFLAGS = -g
+# for debug
+#CXXFLAGS += -g -Wall -O0
+CXXFLAGS += -Wall
 
 all:	iffdigest.o
 
