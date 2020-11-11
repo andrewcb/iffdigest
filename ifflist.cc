@@ -3,7 +3,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
-#include <iostream.h>
+#include <iostream>
 #include <stdio.h>
 
 void
@@ -26,10 +26,10 @@ dump_chunk_list(IFFChunkIterator from, IFFChunkIterator to, int level=0)
   }
 }
 
-main(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
   if(argc<2) {
-    cerr<<"usage: "<<argv[0]<<" filename\n";
+    std::cerr<<"usage: "<<argv[0]<<" filename\n";
     return 2;
   }
   int fd = open(argv[1], O_RDONLY);
@@ -41,7 +41,7 @@ main(int argc, char* argv[])
     dump_chunk_list(iff.ck_begin(), iff.ck_end(), 0);
     return 0;
   } else {
-    cerr<<argv[0]<<": "<<argv[1]<<" is not a legal EA-IFF-85 or RIFF file.\n";
+    std::cerr<<argv[0]<<": "<<argv[1]<<" is not a legal EA-IFF-85 or RIFF file.\n";
     return 1;
   }
 }
