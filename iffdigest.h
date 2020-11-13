@@ -28,9 +28,9 @@ protected:
   iff_ckid_t ckid;
   char tnull; 		// terminating null for id
   enum { IFF_CHUNK_DATA, IFF_CHUNK_LIST } ctype;
+  IFFChunkList subchunks;
   const char* data;
   unsigned int length;
-  IFFChunkList subchunks;
   
 public:
   IFFChunk(unsigned int id, const char* d, unsigned int l) 

@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <iostream>
 
-main(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
   if(argc<2) {
     std::cerr<<"usage: "<<argv[0]<<" filename\n";
